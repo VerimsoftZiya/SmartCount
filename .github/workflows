@@ -1,0 +1,29 @@
+name: Build APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Android iskeletini olustur
+        run: |
+          mkdir /tmp/keep && cp -r lib pubspec.yaml /tmp/keep/
+          flutter create --platforms=android --project-name sayim_app .
+          cp -r /tmp/keep/lib/. lib/ && cp /tmp/keep/pubspec.yaml pubspec.yaml
+          sed -i 's#<application#<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>\n    <application#' android/app/src/main/AndroidManifest.xml
+      - run: flutter pub get
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sayim-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
